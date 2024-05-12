@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Transaction {
+  id         String             @id @default(uuid())
+  amount     Float
+  to_address String             @db.VarChar(255)
+  status     TRANSACTION_STATUS
+  timestamp  DateTime           @default(now())
+
+  payment_history PaymentHistory[]
+
+  @@map("transactions")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(255)
+  password String @db.VarChar(255)
+
+  payment_account PaymentAccount[]
+
+  @@map("users")
+}
+
+model PaymentAccount {
+  account_number String       @id @db.VarChar(255)
+  user_id        Int
+  type           ACCOUNT_TYPE
+  balance        Float        @default(0)
+
+  user            User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payment_history PaymentHistory[]
+
+  @@map("payment_accounts")
+}
+
+model PaymentHistory {
+  id             Int    @id @default(autoincrement())
+  transaction_id String
+  account_number String
+
+  transaction     Transaction    @relation(fields: [transaction_id], references: [id])
+  payment_account PaymentAccount @relation(fields: [account_number], references: [account_number], onDelete: Cascade)
+
+  @@map("payment_history")
+}
+
+enum ACCOUNT_TYPE {
+  DEBIT
+  CREDIT
+  LOAN
+}
+
+enum TRANSACTION_STATUS {
+  PENDING
+  SUCCESS
+  CANCELED
+}
